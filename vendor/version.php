@@ -1,0 +1,3 @@
+<?php
+
+define('PLISIO_PRESTASHOP_EXTENSION_VERSION', '1.0.0');
