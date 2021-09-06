@@ -1,7 +1,7 @@
 <?php
 
-require_once(_PS_MODULE_DIR_ . '/plisio/vendor/plisio/init.php');
 require_once(_PS_MODULE_DIR_ . '/plisio/vendor/version.php');
+require_once _PS_MODULE_DIR_ . '/plisio/vendor/plisio/lib/PlisioClient.php';
 
 class PlisioCallbackModuleFrontController extends ModuleFrontController
 {
@@ -21,15 +21,6 @@ class PlisioCallbackModuleFrontController extends ModuleFrontController
                 throw new Exception($error_message);
             }
 
-            $auth_token = Configuration::get('PLISIO_API_AUTH_TOKEN');
-
-            $plConfig = array(
-                'auth_token' => $auth_token,
-                'user_agent' => 'Plisio - Prestashop v' . _PS_VERSION_
-                    . ' Extension v' . PLISIO_PRESTASHOP_EXTENSION_VERSION
-            );
-
-            \Plisio\Plisio::config($plConfig);
             $plOrder = $_POST;
 
             if (!$plOrder) {

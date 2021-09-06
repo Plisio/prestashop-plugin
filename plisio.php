@@ -1,10 +1,11 @@
 <?php
+use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once _PS_MODULE_DIR_ . '/plisio/vendor/plisio/init.php';
+require_once _PS_MODULE_DIR_ . '/plisio/vendor/plisio/lib/PlisioClient.php';
 require_once _PS_MODULE_DIR_ . '/plisio/vendor/version.php';
 
 class Plisio extends PaymentModule
@@ -13,18 +14,16 @@ class Plisio extends PaymentModule
     private $postErrors = array();
 
     public $api_auth_token;
-    public $receive_currency;
 
     public function __construct()
     {
         $this->name = 'plisio';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.0';
+        $this->version = PLISIO_PRESTASHOP_EXTENSION_VERSION;
         $this->author = 'plugins@plisio.net';
         $this->is_eu_compatible = 1;
         $this->controllers = array('payment', 'redirect', 'callback', 'cancel');
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
-        /*$this->module_key = '*';*/
 
         $this->currencies = true;
         $this->currencies_mode = 'checkbox';
@@ -33,17 +32,12 @@ class Plisio extends PaymentModule
 
         $config = Configuration::getMultiple(
             array(
-                'PLISIO_API_AUTH_TOKEN',
-                'PLISIO_RECEIVE_CURRENCY',
+                'PLISIO_API_AUTH_TOKEN'
             )
         );
 
         if (!empty($config['PLISIO_API_AUTH_TOKEN'])) {
             $this->api_auth_token = $config['PLISIO_API_AUTH_TOKEN'];
-        }
-
-        if (!empty($config['PLISIO_RECEIVE_CURRENCY'])) {
-            $this->receive_currency = $config['PLISIO_RECEIVE_CURRENCY'];
         }
 
         parent::__construct();
@@ -52,8 +46,7 @@ class Plisio extends PaymentModule
         $this->description = $this->l('Accept Bitcoin and other cryptocurrencies as a payment method with Plisio');
         $this->confirmUninstall = $this->l('Are you sure you want to delete your details?');
 
-        if (!isset($this->api_auth_token)
-            || !isset($this->receive_currency)) {
+        if (!isset($this->api_auth_token)) {
             $this->warning = $this->l('API Access details must be configured in order to use this module correctly.');
         }
     }
@@ -151,7 +144,6 @@ class Plisio extends PaymentModule
         return (
             Configuration::deleteByName('PLISIO_APP_ID') &&
             Configuration::deleteByName('PLISIO_API_AUTH_TOKEN') &&
-            Configuration::deleteByName('PLISIO_RECEIVE_CURRENCY') &&
             $order_state_pending->delete() &&
             $order_state_expired->delete() &&
             $order_state_confirming->delete() &&
@@ -165,20 +157,6 @@ class Plisio extends PaymentModule
             if (!Tools::getValue('PLISIO_API_AUTH_TOKEN')) {
                 $this->postErrors[] = $this->l('Secret key is required.');
             }
-
-            if (!Tools::getValue('PLISIO_RECEIVE_CURRENCY')) {
-                $this->postErrors[] = $this->l('Receive Currency is required.');
-            }
-
-            if (empty($this->postErrors)) {
-                $plConfig = array(
-                    'auth_token' => $this->stripString(Tools::getValue('PLISIO_API_AUTH_TOKEN')),
-                    'user_agent' => 'Plisio - Prestashop v' . _PS_VERSION_
-                        . ' Extension v' . PLISIO_PRESTASHOP_EXTENSION_VERSION,
-                );
-
-                \Plisio\Plisio::config($plConfig);
-            }
         }
     }
 
@@ -189,7 +167,6 @@ class Plisio extends PaymentModule
                 'PLISIO_API_AUTH_TOKEN',
                 $this->stripString(Tools::getValue('PLISIO_API_AUTH_TOKEN'))
             );
-            Configuration::updateValue('PLISIO_RECEIVE_CURRENCY', $this->stripString(implode(',', Tools::getValue('PLISIO_RECEIVE_CURRENCY'))));
         }
 
         $this->html .= $this->displayConfirmation($this->l('Settings updated'));
@@ -307,10 +284,7 @@ class Plisio extends PaymentModule
 
         $newOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
         $newOption->setCallToActionText('Pay by Plisio cryptocurrencies')
-            ->setAction($this->context->link->getModuleLink($this->name, 'redirect', array(), true))
-            ->setAdditionalInformation(
-                $this->context->smarty->fetch('module:plisio/views/templates/hook/plisio_intro.tpl')
-            );
+            ->setAction($this->context->link->getModuleLink($this->name, 'redirect', array(), true));
 
         $payment_options = array($newOption);
 
@@ -348,55 +322,7 @@ class Plisio extends PaymentModule
                         'name' => 'PLISIO_API_AUTH_TOKEN',
                         'desc' => $this->l('Your Secret key (created on Plisio)'),
                         'required' => true,
-                    ),
-                    array(
-                        'type' => 'select',
-                        'multiple' => true,
-                        'label' => $this->l('Payout Currency'),
-                        'name' => 'PLISIO_RECEIVE_CURRENCY',
-                        'desc' => $this->l(
-                            'Choose the currency in which you would like to receive payouts.'
-                        ),
-                        'required' => true,
-                        'options' => array(
-                            'query' => array(
-                                array(
-                                    'id_option' => 'BTC',
-                                    'name'      => 'Bitcoin (฿)',
-                                ),
-                                array(
-                                    'id_option' => 'ETH',
-                                    'name'      => 'Ethereum',
-                                ),
-                                array(
-                                    'id_option' => 'LTC',
-                                    'name'      => 'Litecoin',
-                                ),
-                                array(
-                                    'id_option' => 'DASH',
-                                    'name'      => 'Dash',
-                                ),
-                                array(
-                                    'id_option' => 'TZEC',
-                                    'name'      => 'Zcash',
-                                ),
-                                array(
-                                    'id_option' => 'DOGE',
-                                    'name'      => 'Dogecoin',
-                                ),
-                                array(
-                                    'id_option' => 'BCH',
-                                    'name'      => 'Bitcoin Cash',
-                                ),
-                                array(
-                                    'id_option' => 'XMR',
-                                    'name'      => 'Monero',
-                                ),
-                            ),
-                            'id' => 'id_option',
-                            'name' => 'name',
-                        ),
-                    ),
+                    )
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -434,8 +360,7 @@ class Plisio extends PaymentModule
             'PLISIO_API_AUTH_TOKEN' => $this->stripString(Tools::getValue(
                 'PLISIO_API_AUTH_TOKEN',
                 Configuration::get('PLISIO_API_AUTH_TOKEN')
-            )),
-            'PLISIO_RECEIVE_CURRENCY[]' => $this->stripString(explode(',', Configuration::get('PLISIO_RECEIVE_CURRENCY')))
+            ))
         );
     }
 
