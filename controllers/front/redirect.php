@@ -57,7 +57,7 @@ class PlisioRedirectModuleFrontController extends ModuleFrontController
             'cancel_url'       => $this->context->link->getModuleLink('plisio', 'cancel'),
             'callback_url'     => $this->context->link->getModuleLink('plisio', 'callback'),
             'success_url'      => $success_url,
-            'description'      => join($description, ', '),
+            'description'      => implode(', ', $description),
             'plugin' => 'PrestaShop',
             'version' => PLISIO_PRESTASHOP_EXTENSION_VERSION,
             'email' => $this->context->customer->email,

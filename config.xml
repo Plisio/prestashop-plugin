@@ -2,7 +2,7 @@
 <module>
     <name>plisio</name>
     <displayName><![CDATA[Accept Cryptocurrencies with Plisio]]></displayName>
-    <version><![CDATA[1.0.1]]></version>
+    <version><![CDATA[1.0.2]]></version>
     <description><![CDATA[Accept Bitcoin and other cryptocurrencies as a payment method with Plisio]]></description>
     <author><![CDATA[plugins@plisio.net]]></author>
     <tab><![CDATA[payments_gateways]]></tab>
