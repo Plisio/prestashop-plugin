@@ -126,7 +126,6 @@ class Plisio extends PaymentModule
 
         if (!parent::install()
             || !$this->registerHook('payment')
-            || !$this->registerHook('displayPaymentEU')
             || !$this->registerHook('paymentReturn')
             || !$this->registerHook('paymentOptions')) {
             return false;
